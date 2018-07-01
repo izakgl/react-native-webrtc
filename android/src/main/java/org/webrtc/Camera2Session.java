@@ -12,6 +12,7 @@ package org.webrtc;
 
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
@@ -22,11 +23,17 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
+import android.media.ImageReader;
 import android.media.MediaRecorder;
 import android.os.Handler;
 import android.util.Range;
 import android.view.Surface;
 import android.view.WindowManager;
+
+import com.facebook.react.bridge.Callback;
+import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.ReadableMap;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -69,6 +76,10 @@ class Camera2Session implements CameraSession {
   // Initialized when camera opens
   private CameraDevice cameraDevice;
   private Surface surface;
+
+  private CapturePhoto capturePhoto;
+  private ImageReader imageReader;
+  private Handler imageProcessingHandler;
 
   // Initialized when capture session is created
   private CameraCaptureSession captureSession;
@@ -134,6 +145,11 @@ class Camera2Session implements CameraSession {
         Logging.d(TAG, "Add MediaRecorder surface to capture session.");
         surfaces.add(mediaRecorderSurface);
       }
+      if (imageReader != null) {
+        Logging.d(TAG, "Add ImageReader surface to capture session.");
+        surfaces.add(imageReader.getSurface());
+      }
+
       try {
         camera.createCaptureSession(surfaces, new CaptureSessionCallback(), cameraThreadHandler);
       } catch (CameraAccessException e) {
@@ -331,6 +347,11 @@ class Camera2Session implements CameraSession {
     this.height = height;
     this.framerate = framerate;
 
+    this.capturePhoto = new CapturePhoto();
+    this.imageProcessingHandler = new Handler();
+    this.imageReader = ImageReader.newInstance(1920, 1080, ImageFormat.JPEG, 2);
+    this.imageReader.setOnImageAvailableListener(this.capturePhoto.onImageAvailableListener, this.imageProcessingHandler);
+
     start();
   }
 
@@ -475,6 +496,30 @@ class Camera2Session implements CameraSession {
   private void checkIsOnCameraThread() {
     if (Thread.currentThread() != cameraThreadHandler.getLooper().getThread()) {
       throw new IllegalStateException("Wrong thread");
+    }
+  }
+
+  public void takePhoto(ReactApplicationContext context,
+                        final ReadableMap options,
+                        final Callback successCallback,
+                        final Callback errorCallback) {
+    try {
+      final int flashMode = options.getInt("flashMode");
+
+      this.capturePhoto.setContext(context);
+      this.capturePhoto.setOrientation(getFrameOrientation());
+      this.capturePhoto.setOptionsAndCallback(options, successCallback, errorCallback);
+
+      CaptureRequest.Builder requestBuilder = this.cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+      requestBuilder.addTarget(imageReader.getSurface());
+      requestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_AUTO);
+      requestBuilder.set(CaptureRequest.JPEG_ORIENTATION, getFrameOrientation());
+      requestBuilder.set(CaptureRequest.FLASH_MODE, flashMode);
+
+      this.captureSession.capture(requestBuilder.build(), null, null);
+    } catch (Exception e) {
+      Logging.e(TAG, "Capture photo failed");
+      errorCallback.invoke(e.getMessage());
     }
   }
 }

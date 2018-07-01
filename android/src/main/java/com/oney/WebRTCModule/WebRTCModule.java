@@ -622,6 +622,17 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
         }
     }
 
+    @ReactMethod
+    public void mediaStreamTrackCapturePhoto(final String id,
+                                             final ReadableMap options,
+                                             final Callback successCallback,
+                                             final Callback errorCallback) {
+        MediaStreamTrack track = getLocalTrack(id);
+        if (track != null) {
+            getUserMediaImpl.capturePhoto(id, options, successCallback, errorCallback);
+        }
+    }
+
     public WritableMap getCameraInfo(int index) {
         CameraInfo info = new CameraInfo();
 

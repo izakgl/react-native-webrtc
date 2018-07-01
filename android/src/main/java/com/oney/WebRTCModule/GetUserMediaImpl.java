@@ -595,6 +595,22 @@ class GetUserMediaImpl {
         }
     }
 
+    void capturePhoto(final String trackId,
+                      final ReadableMap options,
+                      final Callback successCallback,
+                      final Callback errorCallback) {
+        TrackPrivate track = tracks.get(trackId);
+        if (track != null && track.videoCapturer != null) {
+            try {
+                CapturePhotoHelper capturePhotoHelper = new CapturePhotoHelper(track.videoCapturer);
+                capturePhotoHelper.capturePhoto(getReactApplicationContext(), options, successCallback, errorCallback);
+            } catch (Exception e) {
+                Log.e(TAG, "Error: " + e.getMessage());
+                errorCallback.invoke(e.getMessage());
+            }
+        }
+    }
+
     /**
      * Application/library-specific private members of local
      * {@code MediaStreamTrack}s created by {@code GetUserMediaImpl}.
