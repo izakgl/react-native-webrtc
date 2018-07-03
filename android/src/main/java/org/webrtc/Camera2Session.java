@@ -23,6 +23,7 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.ImageReader;
 import android.media.MediaRecorder;
 import android.os.Handler;
@@ -35,6 +36,8 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReadableMap;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.webrtc.CameraEnumerationAndroid.CaptureFormat;
@@ -149,6 +152,25 @@ class Camera2Session implements CameraSession {
         Logging.d(TAG, "Add MediaRecorder surface to capture session.");
         surfaces.add(mediaRecorderSurface);
       }
+
+
+      /*
+       * Initialize imageReader after camera opens so we can access characteristics
+       * getOutputSizes returns all available camera sizes
+       */
+      try {
+        List<android.util.Size> sizes = getOutputSizes(cameraCharacteristics, ImageFormat.JPEG);
+        int width = sizes.get(0).getWidth();
+        int height = sizes.get(0).getHeight();
+
+        capturePhoto = new CapturePhoto();
+        imageProcessingHandler = new Handler();
+        imageReader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 2);
+        imageReader.setOnImageAvailableListener(capturePhoto.onImageAvailableListener, imageProcessingHandler);
+      } catch (Exception e) {
+        Logging.e(TAG, "imageReader failed to init");
+      }
+
       if (imageReader != null) {
         Logging.d(TAG, "Add ImageReader surface to capture session.");
         surfaces.add(imageReader.getSurface());
@@ -360,11 +382,6 @@ class Camera2Session implements CameraSession {
     this.height = height;
     this.framerate = framerate;
 
-    this.capturePhoto = new CapturePhoto();
-    this.imageProcessingHandler = new Handler();
-    this.imageReader = ImageReader.newInstance(1920, 1080, ImageFormat.JPEG, 2);
-    this.imageReader.setOnImageAvailableListener(this.capturePhoto.onImageAvailableListener, this.imageProcessingHandler);
-
     start();
   }
 
@@ -554,6 +571,26 @@ class Camera2Session implements CameraSession {
     } catch (Exception e) {
       Logging.e(TAG, "Capture photo failed");
       errorCallback.invoke(e.getMessage());
+    }
+  }
+
+  private static List<android.util.Size> getOutputSizes(CameraCharacteristics cameraCharacteristics, Object kind) {
+    //my kind value is ImageFormat.JPEG in this example
+    StreamConfigurationMap streamConfigurationMap = cameraCharacteristics
+            .get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+    if (streamConfigurationMap != null) {
+      android.util.Size[] availableResolutionsArray;
+      //The parameter is either an Integer (JPEG) or a class (MediaRecorder.class)
+      if (kind instanceof Integer) {
+        availableResolutionsArray = streamConfigurationMap.getOutputSizes((Integer) kind);
+      } else {
+        availableResolutionsArray = streamConfigurationMap.getOutputSizes((Class) kind);
+      }
+      List<android.util.Size> availableResolutions = Arrays.asList(availableResolutionsArray);
+
+      return availableResolutions;
+    } else {
+      return Collections.singletonList(new android.util.Size(1920, 1080));
     }
   }
 }
