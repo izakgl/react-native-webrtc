@@ -181,51 +181,8 @@ class Camera2Session implements CameraSession {
 
     @Override
     public void onConfigured(CameraCaptureSession session) {
-      ConfigureCameraCaptureSession(session, true);
-    }
+      ConfigureCameraCaptureSession(session);
 
-  }
-
-  private void ConfigureCameraCaptureSession(CameraCaptureSession session, boolean firstRun) {
-    checkIsOnCameraThread();
-    Logging.d(TAG, "Camera capture session configured.");
-    captureSession = session;
-    try {
-        /*
-         * The viable options for video capture requests are:
-         * TEMPLATE_PREVIEW: High frame rate is given priority over the highest-quality
-         *   post-processing.
-         * TEMPLATE_RECORD: Stable frame rate is used, and post-processing is set for recording
-         *   quality.
-         */
-      final CaptureRequest.Builder captureRequestBuilder =
-              cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
-      // Set auto exposure fps range.
-      captureRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
-              new Range<Integer>(captureFormat.framerate.min / fpsUnitFactor,
-                      captureFormat.framerate.max / fpsUnitFactor));
-      captureRequestBuilder.set(
-              CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
-      captureRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, false);
-      if (flashModeON) {
-        captureRequestBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_TORCH);
-      }
-      chooseStabilizationMode(captureRequestBuilder);
-      chooseFocusMode(captureRequestBuilder);
-
-      captureRequestBuilder.addTarget(surface);
-      if (mediaRecorderSurface != null) {
-        Logging.d(TAG, "Add MediaRecorder surface to CaptureRequest.Builder");
-        captureRequestBuilder.addTarget(mediaRecorderSurface);
-      }
-      session.setRepeatingRequest(
-              captureRequestBuilder.build(), new CameraCaptureCallback(), cameraThreadHandler);
-    } catch (CameraAccessException e) {
-      reportError("Failed to start capture request. " + e);
-      return;
-    }
-
-    if (firstRun) {
       surfaceTextureHelper.startListening(
               new SurfaceTextureHelper.OnTextureFrameAvailableListener() {
                 @Override
@@ -272,6 +229,48 @@ class Camera2Session implements CameraSession {
                 }
               });
     }
+
+  }
+
+  private void ConfigureCameraCaptureSession(CameraCaptureSession session) {
+    checkIsOnCameraThread();
+    Logging.d(TAG, "Camera capture session configured.");
+    captureSession = session;
+    try {
+        /*
+         * The viable options for video capture requests are:
+         * TEMPLATE_PREVIEW: High frame rate is given priority over the highest-quality
+         *   post-processing.
+         * TEMPLATE_RECORD: Stable frame rate is used, and post-processing is set for recording
+         *   quality.
+         */
+      final CaptureRequest.Builder captureRequestBuilder =
+              cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
+      // Set auto exposure fps range.
+      captureRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
+              new Range<Integer>(captureFormat.framerate.min / fpsUnitFactor,
+                      captureFormat.framerate.max / fpsUnitFactor));
+      captureRequestBuilder.set(
+              CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
+      captureRequestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, false);
+      if (flashModeON) {
+        captureRequestBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_TORCH);
+      }
+      chooseStabilizationMode(captureRequestBuilder);
+      chooseFocusMode(captureRequestBuilder);
+
+      captureRequestBuilder.addTarget(surface);
+      if (mediaRecorderSurface != null) {
+        Logging.d(TAG, "Add MediaRecorder surface to CaptureRequest.Builder");
+        captureRequestBuilder.addTarget(mediaRecorderSurface);
+      }
+      session.setRepeatingRequest(
+              captureRequestBuilder.build(), new CameraCaptureCallback(), cameraThreadHandler);
+    } catch (CameraAccessException e) {
+      reportError("Failed to start capture request. " + e);
+      return;
+    }
+
     Logging.d(TAG, "Camera device successfully started.");
     callback.onDone(Camera2Session.this);
   }
@@ -525,7 +524,7 @@ class Camera2Session implements CameraSession {
       Runnable myRunnable = new Runnable() {
         @Override
         public void run() {
-          ConfigureCameraCaptureSession(captureSession, false);
+          ConfigureCameraCaptureSession(captureSession);
           successCallback.invoke("Successful");
         }
       };
