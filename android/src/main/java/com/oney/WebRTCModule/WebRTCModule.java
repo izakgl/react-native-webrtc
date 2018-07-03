@@ -633,6 +633,14 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
         }
     }
 
+    @ReactMethod
+    public void switchFlash(final String id,
+                            final ReadableMap options,
+                            final Callback successCallback,
+                            final Callback errorCallback) {
+        getUserMediaImpl.switchFlash(id, options, successCallback, errorCallback);
+    }
+
     public WritableMap getCameraInfo(int index) {
         CameraInfo info = new CameraInfo();
 

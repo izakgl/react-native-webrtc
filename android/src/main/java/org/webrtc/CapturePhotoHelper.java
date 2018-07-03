@@ -31,6 +31,14 @@ public class CapturePhotoHelper {
         }
     }
 
+    public void switchFlash(final ReadableMap options,
+                            final Callback successCallback,
+                            final Callback errorCallback) {
+        if (cameraSession instanceof Camera2Session) {
+            ((Camera2Session) cameraSession).switchFlash(options, successCallback, errorCallback);
+        }
+    }
+
     @SuppressWarnings("deprecation")
     private CameraSession getCameraSessionInstance(VideoCapturer videoCapturer) throws Exception {
         CameraSession cameraSession = null;

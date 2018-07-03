@@ -35,6 +35,13 @@ function convertToNativeOptions(options) {
   let mutableDefaults = {};
   mutableDefaults.maxSize = MediaStreamTrack.defaults.maxSize;
   mutableDefaults.maxJpegQuality = MediaStreamTrack.defaults.maxJpegQuality;
+
+  const mergedOptions = Object.assign(mutableDefaults, options);
+  return mergedOptions;
+}
+
+function convertToNativeOptionsFlash(options) {
+  let mutableDefaults = {};
   mutableDefaults.flashMode = MediaStreamTrack.defaults.flashMode;
 
   const mergedOptions = Object.assign(mutableDefaults, options);
@@ -139,6 +146,18 @@ class MediaStreamTrack extends EventTarget(MEDIA_STREAM_TRACK_EVENTS) {
 
     let nativeOptions = convertToNativeOptions(options);
     WebRTCModule.mediaStreamTrackCapturePhoto(this.id, nativeOptions, success, error);
+  }
+
+  switchFlash(options: SnapshotOptions, success: (any) => {}, error: (any) => {}) {
+    if (this.remote) {
+      throw new Error('Not implemented for remote tracks');
+    }
+    if (this.kind !== 'video') {
+      throw new Error('Only implemented for video tracks');
+    }
+
+    let nativeOptions = convertToNativeOptionsFlash(options);
+    WebRTCModule.switchFlash(this.id, nativeOptions, success, error);
   }
 
   applyConstraints() {
