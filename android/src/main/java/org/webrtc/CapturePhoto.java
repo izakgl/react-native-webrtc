@@ -52,17 +52,23 @@ public class CapturePhoto {
     public final ImageReader.OnImageAvailableListener onImageAvailableListener = new ImageReader.OnImageAvailableListener() {
         @Override
         public void onImageAvailable(ImageReader imageReader) {
-            Image image = imageReader.acquireLatestImage();
-            ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-            byte[] bytes = new byte[buffer.remaining()];
-            buffer.get(bytes);
-            try {
-                String path = savePicture(bytes);
-                successCallback.invoke(path);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            image.close();
+            Runnable savePhotoRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    Image image = imageReader.acquireLatestImage();
+                    ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+                    byte[] bytes = new byte[buffer.remaining()];
+                    buffer.get(bytes);
+                    try {
+                        String path = savePicture(bytes);
+                        successCallback.invoke(path);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    image.close();
+                }
+            };
+            AsyncTask.execute(savePhotoRunnable);
         }
     };
 
