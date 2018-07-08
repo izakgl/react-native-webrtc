@@ -3,6 +3,7 @@ package org.webrtc;
 import android.annotation.TargetApi;
 import android.media.Image;
 import android.media.ImageReader;
+import android.os.AsyncTask;
 import android.util.Log;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
