@@ -100,6 +100,7 @@ public class CapturePhotoHelper {
         camera.takePicture(null, null, new Camera.PictureCallback() {
             @Override
             public void onPictureTaken(final byte[] jpeg, final Camera camera) {
+                camera.startPreview();
                 Runnable savePhotoRunnable = new Runnable() {
                     @Override
                     public void run() {
