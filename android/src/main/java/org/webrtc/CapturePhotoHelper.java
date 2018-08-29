@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 
 public class CapturePhotoHelper {
     static final String TAG = "TakePictureModule";
@@ -45,6 +46,8 @@ public class CapturePhotoHelper {
                             final Callback errorCallback) {
         if (cameraSession instanceof Camera2Session) {
             ((Camera2Session) cameraSession).switchFlash(options, successCallback, errorCallback);
+        } else {
+            this.switchFlashCamera1(options, successCallback, errorCallback);
         }
     }
 
@@ -67,10 +70,47 @@ public class CapturePhotoHelper {
     }
 
     @SuppressWarnings("deprecation")
+    private void switchFlashCamera1(final ReadableMap options,
+                                    final Callback successCallback,
+                                    final Callback errorCallback) {
+        Camera camera;
+        try {
+            camera = getCameraInstance(cameraSession);
+        } catch (Exception e) {
+            String message = "Error getting camera instance for stream";
+            Log.d(TAG, message, e);
+            errorCallback.invoke(message);
+            return;
+        }
+
+        final int flashMode = options.getInt("flashMode");
+
+        try {
+
+            Camera.Parameters p = camera.getParameters();
+
+            if (flashMode == 1) {
+                p.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+            } else {
+                p.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+            }
+
+            camera.setParameters(p);
+        } catch (Exception e) {
+            Log.e(TAG, "Error switching flash");
+            errorCallback.invoke(e.getMessage());
+            return;
+        }
+
+        successCallback.invoke("Successful");
+    }
+
+
+    @SuppressWarnings("deprecation")
     private void takePicture(ReactApplicationContext context,
-                            final ReadableMap options,
-                            final Callback successCallback,
-                            final Callback errorCallback) {
+                             final ReadableMap options,
+                             final Callback successCallback,
+                             final Callback errorCallback) {
 
         CapturePhoto capturePhoto = new CapturePhoto();
         capturePhoto.setContext(context);
