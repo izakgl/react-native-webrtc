@@ -16,6 +16,7 @@ import android.os.Environment;
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReadableMap;
+import com.oney.WebRTCModule.WebRTCModule;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -23,7 +24,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
-@TargetApi(21)
 public class CapturePhoto {
     private static final String TAG = "Camera2Session";
     private int orientation;
@@ -32,6 +32,7 @@ public class CapturePhoto {
     private Callback errorCallback;
     private int maxSize = 2000;
     private double maxJpegQuality = 1.0;
+    private int captureTarget = WebRTCModule.RCT_CAMERA_CAPTURE_TARGET_CAMERA_ROLL;
 
     public void setContext(ReactApplicationContext context) {
         this.context = context;
@@ -46,10 +47,12 @@ public class CapturePhoto {
                                       final Callback errorCallback) {
         this.maxJpegQuality = options.getDouble("maxJpegQuality");
         this.maxSize = options.getInt("maxSize");
+        this.captureTarget = options.getInt("captureTarget");
         this.successCallback = successCallback;
         this.errorCallback = errorCallback;
     }
 
+    @TargetApi(21)
     public final ImageReader.OnImageAvailableListener onImageAvailableListener = new ImageReader.OnImageAvailableListener() {
         @Override
         public void onImageAvailable(ImageReader imageReader) {
@@ -73,7 +76,7 @@ public class CapturePhoto {
         }
     };
 
-    private synchronized String savePicture(byte[] jpeg) throws IOException {
+    public synchronized String savePicture(byte[] jpeg) throws IOException {
         String filename = UUID.randomUUID().toString();
         File file = null;
 
