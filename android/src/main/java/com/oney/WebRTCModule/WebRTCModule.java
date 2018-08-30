@@ -20,6 +20,7 @@ import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -42,6 +43,11 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
      * in order to reduce complexity and to (somewhat) separate concerns.
      */
     private final GetUserMediaImpl getUserMediaImpl;
+
+    public static final int RCT_CAMERA_CAPTURE_TARGET_MEMORY = 0;
+    public static final int RCT_CAMERA_CAPTURE_TARGET_DISK = 1;
+    public static final int RCT_CAMERA_CAPTURE_TARGET_CAMERA_ROLL = 2;
+    public static final int RCT_CAMERA_CAPTURE_TARGET_TEMP = 3;
 
     public WebRTCModule(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -75,7 +81,19 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
     public Map<String, Object> getConstants() {
         final Map<String, Object> constants = new HashMap<>();
         constants.put(LANGUAGE, getCurrentLanguage());
+        constants.put("CaptureTarget", getCaptureTargetConstants());
         return constants;
+    }
+
+    private Map<String, Object> getCaptureTargetConstants() {
+        return Collections.unmodifiableMap(new HashMap<String, Object>() {
+            {
+                put("memory", RCT_CAMERA_CAPTURE_TARGET_MEMORY);
+                put("temp", RCT_CAMERA_CAPTURE_TARGET_TEMP);
+                put("cameraRoll", RCT_CAMERA_CAPTURE_TARGET_CAMERA_ROLL);
+                put("disk", RCT_CAMERA_CAPTURE_TARGET_DISK);
+            }
+        });
     }
 
     @ReactMethod
