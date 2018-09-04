@@ -38,6 +38,7 @@ import com.facebook.react.bridge.ReadableMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.webrtc.CameraEnumerationAndroid.CaptureFormat;
@@ -160,6 +161,12 @@ class Camera2Session implements CameraSession {
        */
       try {
         List<android.util.Size> sizes = getOutputSizes(cameraCharacteristics, ImageFormat.JPEG);
+        Collections.sort(sizes, new Comparator<android.util.Size>() {
+          @Override
+          public int compare(android.util.Size a, android.util.Size b) {
+            return b.getHeight() * b.getWidth() - a.getHeight() * a.getWidth();
+          }
+        });
         int width = sizes.get(0).getWidth();
         int height = sizes.get(0).getHeight();
 
@@ -565,7 +572,7 @@ class Camera2Session implements CameraSession {
       requestBuilder.addTarget(imageReader.getSurface());
       requestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_AUTO);
       requestBuilder.set(CaptureRequest.JPEG_ORIENTATION, getFrameOrientation());
-      requestBuilder.set(CaptureRequest.FLASH_MODE, flashModeON ? CaptureRequest.FLASH_MODE_SINGLE : CaptureRequest.FLASH_MODE_OFF);
+      requestBuilder.set(CaptureRequest.FLASH_MODE, flashModeON ? CaptureRequest.FLASH_MODE_TORCH : CaptureRequest.FLASH_MODE_OFF);
 
       this.captureSession.capture(requestBuilder.build(), null, null);
     } catch (Exception e) {
