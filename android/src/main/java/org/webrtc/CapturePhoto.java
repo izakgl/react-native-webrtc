@@ -1,6 +1,7 @@
 package org.webrtc;
 
 import android.annotation.TargetApi;
+import android.media.ExifInterface;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.AsyncTask;
@@ -92,13 +93,16 @@ public class CapturePhoto {
         output.write(jpeg);
         output.close();
 
+        Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
+
+        ExifInterface exif = new ExifInterface(file.getAbsolutePath());
+        int rotation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+
         Matrix matrix = new Matrix();
         Log.d(TAG, "orientation " + orientation);
-        if (orientation != 0) {
+        if (orientation != 0 && rotation != ExifInterface.ORIENTATION_UNDEFINED) {
             matrix.postRotate(orientation);
         }
-
-        Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
 
         // scale if needed
         int width = bitmap.getWidth();
