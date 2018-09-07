@@ -151,7 +151,7 @@ public class CapturePhotoHelper {
                             try {
                                 String path = capturePhoto.savePicture(jpeg);
                                 successCallback.invoke(path);
-                            } catch (IOException e) {
+                            } catch (Exception e) {
                                 String message = "Error saving picture";
                                 Log.d(TAG, message, e);
                                 errorCallback.invoke(message);

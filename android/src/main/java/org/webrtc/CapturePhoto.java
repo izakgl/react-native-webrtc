@@ -67,8 +67,9 @@ public class CapturePhoto {
                     try {
                         String path = savePicture(bytes);
                         successCallback.invoke(path);
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                         e.printStackTrace();
+                        errorCallback.invoke(e.getMessage());
                     }
                     image.close();
                 }
@@ -77,7 +78,7 @@ public class CapturePhoto {
         }
     };
 
-    public synchronized String savePicture(byte[] jpeg) throws IOException {
+    public synchronized String savePicture(byte[] jpeg) throws Exception {
         String filename = UUID.randomUUID().toString();
         File file = null;
 
@@ -88,15 +89,23 @@ public class CapturePhoto {
         return Uri.fromFile(file).toString();
     }
 
-    private String writePictureToFile(byte[] jpeg, File file, int maxSize, double jpegQuality, int orientation) throws IOException {
+    private String writePictureToFile(byte[] jpeg, File file, int maxSize, double jpegQuality, int orientation) throws Exception {
         FileOutputStream output = new FileOutputStream(file);
         output.write(jpeg);
         output.close();
 
         Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
 
-        ExifInterface exif = new ExifInterface(file.getAbsolutePath());
-        int rotation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+        int rotation = ExifInterface.ORIENTATION_NORMAL;
+
+        try {
+            if (!file.getAbsolutePath().equals("")) {
+                ExifInterface exif = new ExifInterface(file.getAbsolutePath());
+                rotation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Exif data error: " + e.getMessage());
+        }
 
         Matrix matrix = new Matrix();
         Log.d(TAG, "orientation " + orientation);
@@ -124,8 +133,9 @@ public class CapturePhoto {
 
         FileOutputStream finalOutput = new FileOutputStream(file, false);
 
-        int compression = (int) (100 * jpegQuality);
         Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+
+        int compression = (int) (100 * jpegQuality);
         rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, compression, finalOutput);
 
         finalOutput.close();
