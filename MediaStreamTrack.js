@@ -25,7 +25,55 @@ type SourceInfo = {
   kind: string;
 };
 
+type SnapshotOptions = {
+  maxSize: number,
+  maxJpegQuality: number,
+};
+
+function convertToNativeOptions(options) {
+  let mutableDefaults = {};
+  mutableDefaults.maxSize = MediaStreamTrack.defaults.maxSize;
+  mutableDefaults.maxJpegQuality = MediaStreamTrack.defaults.maxJpegQuality;
+  mutableDefaults.captureTarget = WebRTCModule.CaptureTarget[MediaStreamTrack.defaults.captureTarget];
+
+  const mergedOptions = Object.assign(mutableDefaults, options);
+
+  if (typeof mergedOptions.captureTarget === 'string') {
+    mergedOptions.captureTarget = WebRTCModule.CaptureTarget[options.captureTarget];
+  }
+
+  return mergedOptions;
+}
+
+function convertToNativeOptionsFlash(options) {
+  let mutableDefaults = {};
+  mutableDefaults.flashMode = MediaStreamTrack.defaults.flashMode;
+
+  const mergedOptions = Object.assign(mutableDefaults, options);
+  return mergedOptions;
+}
+
 class MediaStreamTrack extends EventTarget(MEDIA_STREAM_TRACK_EVENTS) {
+  static constants = {
+    captureTarget: {
+      memory: 'memory',
+      temp: 'temp',
+      disk: 'disk',
+      cameraRoll: 'cameraRoll'
+    },
+    flashMode: {
+      off: 0,
+      on: 1
+    }
+  };
+
+  static defaults = {
+    captureTarget: MediaStreamTrack.constants.captureTarget.cameraRoll,
+    maxSize: 2000,
+    maxJpegQuality: 1,
+    flashMode: MediaStreamTrack.constants.flashMode.off
+  };
+
   _enabled: boolean;
   id: string;
   kind: string;
@@ -90,6 +138,30 @@ class MediaStreamTrack extends EventTarget(MEDIA_STREAM_TRACK_EVENTS) {
       throw new Error('Only implemented for video tracks');
     }
     WebRTCModule.mediaStreamTrackSwitchCamera(this.id);
+  }
+
+  capturePhoto(options: SnapshotOptions, success: (any) => {}, error: (any) => {}) {
+    if (this.remote) {
+      throw new Error('Not implemented for remote tracks');
+    }
+    if (this.kind !== 'video') {
+      throw new Error('Only implemented for video tracks');
+    }
+
+    let nativeOptions = convertToNativeOptions(options);
+    WebRTCModule.mediaStreamTrackCapturePhoto(this.id, nativeOptions, success, error);
+  }
+
+  switchFlash(options: SnapshotOptions, success: (any) => {}, error: (any) => {}) {
+    if (this.remote) {
+      throw new Error('Not implemented for remote tracks');
+    }
+    if (this.kind !== 'video') {
+      throw new Error('Only implemented for video tracks');
+    }
+
+    let nativeOptions = convertToNativeOptionsFlash(options);
+    WebRTCModule.switchFlash(this.id, nativeOptions, success, error);
   }
 
   applyConstraints() {

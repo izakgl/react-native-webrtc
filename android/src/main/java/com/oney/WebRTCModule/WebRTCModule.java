@@ -18,8 +18,10 @@ import com.facebook.react.module.annotations.ReactModule;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.webrtc.*;
@@ -30,6 +32,8 @@ import org.webrtc.audio.JavaAudioDeviceModule;
 public class WebRTCModule extends ReactContextBaseJavaModule {
     static final String TAG = WebRTCModule.class.getCanonicalName();
 
+    private static final String LANGUAGE =  "language";
+
     PeerConnectionFactory mFactory;
     private final SparseArray<PeerConnectionObserver> mPeerConnectionObservers;
     final Map<String, MediaStream> localStreams;
@@ -39,6 +43,11 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
      * in order to reduce complexity and to (somewhat) separate concerns.
      */
     private GetUserMediaImpl getUserMediaImpl;
+
+    public static final int RCT_CAMERA_CAPTURE_TARGET_MEMORY = 0;
+    public static final int RCT_CAMERA_CAPTURE_TARGET_DISK = 1;
+    public static final int RCT_CAMERA_CAPTURE_TARGET_CAMERA_ROLL = 2;
+    public static final int RCT_CAMERA_CAPTURE_TARGET_TEMP = 3;
 
     public static class Options {
         private VideoEncoderFactory videoEncoderFactory = null;
@@ -127,6 +136,30 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
     @Override
     public String getName() {
         return "WebRTCModule";
+    }
+
+    private String getCurrentLanguage() {
+        Locale current = getReactApplicationContext().getResources().getConfiguration().locale;
+        return current.getLanguage();
+    }
+
+    @Override
+    public Map<String, Object> getConstants() {
+        final Map<String, Object> constants = new HashMap<>();
+        constants.put(LANGUAGE, getCurrentLanguage());
+        constants.put("CaptureTarget", getCaptureTargetConstants());
+        return constants;
+    }
+
+    private Map<String, Object> getCaptureTargetConstants() {
+        return Collections.unmodifiableMap(new HashMap<String, Object>() {
+            {
+                put("memory", RCT_CAMERA_CAPTURE_TARGET_MEMORY);
+                put("temp", RCT_CAMERA_CAPTURE_TARGET_TEMP);
+                put("cameraRoll", RCT_CAMERA_CAPTURE_TARGET_CAMERA_ROLL);
+                put("disk", RCT_CAMERA_CAPTURE_TARGET_DISK);
+            }
+        });
     }
 
     private PeerConnection getPeerConnection(int id) {
@@ -627,6 +660,25 @@ public class WebRTCModule extends ReactContextBaseJavaModule {
         if (track != null) {
             getUserMediaImpl.switchCamera(id);
         }
+    }
+
+    @ReactMethod
+    public void mediaStreamTrackCapturePhoto(final String id,
+                                             final ReadableMap options,
+                                             final Callback successCallback,
+                                             final Callback errorCallback) {
+        MediaStreamTrack track = getLocalTrack(id);
+        if (track != null) {
+            getUserMediaImpl.capturePhoto(id, options, successCallback, errorCallback);
+        }
+    }
+
+    @ReactMethod
+    public void switchFlash(final String id,
+                            final ReadableMap options,
+                            final Callback successCallback,
+                            final Callback errorCallback) {
+        getUserMediaImpl.switchFlash(id, options, successCallback, errorCallback);
     }
 
     @ReactMethod
