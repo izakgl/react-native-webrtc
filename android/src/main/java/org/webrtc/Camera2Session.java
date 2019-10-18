@@ -42,8 +42,6 @@ import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReadableMap;
 
-import bolts.Capture;
-
 @TargetApi(21)
 class Camera2Session implements CameraSession {
   private static final String TAG = "Camera2Session";
