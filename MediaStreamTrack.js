@@ -28,6 +28,7 @@ type SourceInfo = {
 type SnapshotOptions = {
   maxSize: number,
   maxJpegQuality: number,
+  captureTarget: MediaStreamTrack.constants.captureTarget
 };
 
 function convertToNativeOptions(options) {
@@ -101,7 +102,7 @@ class MediaStreamTrack extends EventTarget(MEDIA_STREAM_TRACK_EVENTS) {
     this.readonly = true; // how to decide?
     this.remote = info.remote;
     this.readyState = (_readyState === "initializing"
-                    || _readyState === "live") ? "live" : "ended";
+        || _readyState === "live") ? "live" : "ended";
   }
 
   get enabled(): boolean {

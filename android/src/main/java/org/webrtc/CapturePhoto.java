@@ -5,6 +5,7 @@ import android.media.ExifInterface;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.AsyncTask;
+import android.util.Base64;
 import android.util.Log;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -64,12 +65,18 @@ public class CapturePhoto {
                     ByteBuffer buffer = image.getPlanes()[0].getBuffer();
                     byte[] bytes = new byte[buffer.remaining()];
                     buffer.get(bytes);
-                    try {
-                        String path = savePicture(bytes);
-                        successCallback.invoke(path);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        errorCallback.invoke(e.getMessage());
+
+                    if (captureTarget == WebRTCModule.RCT_CAMERA_CAPTURE_TARGET_MEMORY) {
+                        String encoded = Base64.encodeToString(bytes, Base64.DEFAULT);
+                        successCallback.invoke(encoded);
+                    } else {
+                        try {
+                            String path = savePicture(bytes, captureTarget);
+                            successCallback.invoke(path);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            errorCallback.invoke(e.getMessage());
+                        }
                     }
                     image.close();
                 }
@@ -78,13 +85,21 @@ public class CapturePhoto {
         }
     };
 
-    public synchronized String savePicture(byte[] jpeg) throws Exception {
+    public synchronized String savePicture(byte[] jpeg, int target) throws Exception {
         String filename = UUID.randomUUID().toString();
         File file = null;
 
-        file = getOutputCameraRollFile(filename);
+        if (target == WebRTCModule.RCT_CAMERA_CAPTURE_TARGET_CAMERA_ROLL) {
+            file = getOutputCameraRollFile(filename);
+        } else if (target == WebRTCModule.RCT_CAMERA_CAPTURE_TARGET_TEMP) {
+            file = getOutputCacheFile(filename);
+        }
+
         writePictureToFile(jpeg, file, maxSize, maxJpegQuality, orientation);
-        addToMediaStore(file.getAbsolutePath());
+
+        if (target == WebRTCModule.RCT_CAMERA_CAPTURE_TARGET_CAMERA_ROLL) {
+            addToMediaStore(file.getAbsolutePath());
+        }
 
         return Uri.fromFile(file).toString();
     }
@@ -151,6 +166,13 @@ public class CapturePhoto {
         return getOutputFile(
                 fileName + ".jpeg",
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
+        );
+    }
+
+    private File getOutputCacheFile(String fileName) {
+        return getOutputFile(
+                fileName + ".jpeg",
+                context.getCacheDir()
         );
     }
 

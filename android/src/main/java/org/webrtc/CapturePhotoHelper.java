@@ -149,7 +149,7 @@ public class CapturePhotoHelper {
                             successCallback.invoke(encoded);
                         } else {
                             try {
-                                String path = capturePhoto.savePicture(jpeg);
+                                String path = capturePhoto.savePicture(jpeg, captureTarget);
                                 successCallback.invoke(path);
                             } catch (Exception e) {
                                 String message = "Error saving picture";
